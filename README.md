@@ -34,3 +34,26 @@ Images are organized into `data/raw/{newspaper, books, signboards, synthetic, ot
 │   └── labels.csv
 └── README.md
 ```
+# Week 2 – Image Preprocessing
+
+## Overview
+This week focused on building a robust image preprocessing pipeline for the Urdu OCR project. The objective was to standardize the dataset and improve image quality before model training. Preprocessing helps reduce noise, normalize image dimensions, and enhance text visibility, enabling the OCR model to learn more effectively from consistent input data.
+
+## Implementation
+A preprocessing pipeline was developed using Python and OpenCV to perform the following operations:
+
+- Converted all images to grayscale to eliminate unnecessary color information.
+- Resized every image to a fixed resolution of **512 × 128 pixels** for dataset consistency.
+- Applied noise reduction using the **Fast Non-Local Means Denoising** algorithm.
+- Performed binary thresholding to enhance text contrast and improve character visibility.
+- Saved all processed images to the `data/processed/` directory while preserving the original dataset.
+
+## Technologies Used
+- Python
+- OpenCV
+- NumPy
+- Pillow (PIL)
+- Matplotlib
+
+## Outcome
+The preprocessing pipeline was successfully executed across the entire dataset, generating a standardized collection of processed images ready for the next phase of the Urdu OCR project. These preprocessed images provide cleaner, more consistent input for model training, which is expected to improve OCR performance and recognition accuracy.
