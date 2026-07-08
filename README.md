@@ -57,3 +57,19 @@ A preprocessing pipeline was developed using Python and OpenCV to perform the fo
 
 ## Outcome
 The preprocessing pipeline was successfully executed across the entire dataset, generating a standardized collection of processed images ready for the next phase of the Urdu OCR project. These preprocessed images provide cleaner, more consistent input for model training, which is expected to improve OCR performance and recognition accuracy.
+
+## Why We Need a Better Model
+
+### Gap Analysis: Tesseract OCR on Urdu Text
+
+| Image | Actual Urdu Text | Tesseract Output | What Went Wrong |
+|---|---|---|---|
+| Ghalib_page_101_line_4.png | گستاخی فرشتہ ہماری جناب میں | لن ناب | Almost the entire line dropped. Only a fragment resembling the last word (جناب) survived, and even that came out wrong (ناب instead of جناب). Every other word vanished. |
+| Ghalib_page_102_line_4.png | پیش نظر ہے آئنہ دایم نقاب میں | 0 | Complete failure — a 7-word line produced a single digit. Not one character of the actual text was recovered. |
+| Ghalib_page_110_line_1.png | تیرے توسن کو صبا باندھتے ہیں ہم بھی مضموں کی ہوا باندھتے ہیں | ےرا 1 / ۴ 7 | A full two-part verse (14 words); Tesseract returned 2 fragmented letters and a string of unrelated digits/punctuation. No real words recovered at all. |
+| Ghalib_page_123_line_7.png | چھوڑا نہ مجھ میں ضعف نے رنگ اختلاط کا | 7 ںا | 8-word line reduced to a digit and two disconnected letters. No coherent word survived. |
+| Ghalib_page_129_line_2.png | نالۂ مرغ سحر تیغ دو دم ہے ہم کو | اکر ۸ب | 9-word line reduced to unrelated letter fragments and a stray digit. No real words recovered. |
+
+### Summary
+
+Tesseract fails on Urdu because it cannot handle the connected, cursive Nastaliq script that Urdu poetry is written in. Across all 5 test lines from Ghalib's poetry, Tesseract recovered virtually none of the actual text — full 7–14 word verses were reduced to 0–3 disconnected characters, random digits (0, 1, 7, ۴, ۸), or nothing meaningful at all. Not a single line was transcribed correctly, and in one case (page_102) the entire 7-word line was replaced by a single digit. This happens because Urdu letters change shape depending on their position in a word (isolated, initial, medial, final) and flow right-to-left in a continuously joined style — Tesseract's general-purpose model isn't equipped to segment or recognize this correctly, so it essentially guesses at isolated shapes instead of reading connected words. This confirms that off-the-shelf OCR is not viable for Urdu poetry and justifies building a custom-trained model for this project.
