@@ -73,3 +73,66 @@ The preprocessing pipeline was successfully executed across the entire dataset, 
 ### Summary
 
 Tesseract fails on Urdu because it cannot handle the connected, cursive Nastaliq script that Urdu poetry is written in. Across all 5 test lines from Ghalib's poetry, Tesseract recovered virtually none of the actual text — full 7–14 word verses were reduced to 0–3 disconnected characters, random digits (0, 1, 7, ۴, ۸), or nothing meaningful at all. Not a single line was transcribed correctly, and in one case (page_102) the entire 7-word line was replaced by a single digit. This happens because Urdu letters change shape depending on their position in a word (isolated, initial, medial, final) and flow right-to-left in a continuously joined style — Tesseract's general-purpose model isn't equipped to segment or recognize this correctly, so it essentially guesses at isolated shapes instead of reading connected words. This confirms that off-the-shelf OCR is not viable for Urdu poetry and justifies building a custom-trained model for this project.
+
+## Week 3 — Expanding the Dataset & Building the Dataset Class
+
+### Overview
+Focused on scaling the dataset past the 200-image minimum, merging it with Week 1's data into one unified structure, and building the PyTorch `Dataset` class that will feed images into the OCR model during training.
+
+### Dataset Expansion
+- Combined Week 1's original images with a new batch of signboards, newspaper clippings, synthetic word renders, and photo/news screenshots.
+- Final dataset pushed to GitHub: **262 images** across `data/raw/{newspaper, books, signboards, synthetic, other}`.
+- All images preprocessed (grayscale, contrast-normalized, resized to a uniform canvas) into `data/processed/`.
+- Labels merged into a single `data/labels.csv` (schema: `image, category, text`). **53 of 262 rows are labeled with verified ground-truth text; the remaining rows are intentionally left blank** rather than filled with guessed or placeholder text, since incorrect labels would actively harm model training. Labeling the rest is ongoing.
+
+*Note: a Colab test run of the Dataset class loaded 225 samples due to a stale cached session file at the time of testing — the authoritative, current count in this repository's `data/labels.csv` is 262.*
+
+### Dataset Class
+Built `UrduOCRDataset`, a PyTorch `Dataset` implementing `__len__` and `__getitem__`, which loads an image, processes it through TrOCR's image processor, and tokenizes its label using TrOCR's tokenizer.
+
+```python
+class UrduOCRDataset(Dataset):
+    def __init__(self, csv_path, processor):
+        self.data = pd.read_csv(csv_path)
+        self.processor = processor
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        row = self.data.iloc[idx]
+        image = Image.open(row['image']).convert('RGB')
+        encoding = self.processor(image, return_tensors='pt')
+        pixel_values = encoding.pixel_values.squeeze()
+        labels = self.processor.tokenizer(
+            row['text'], padding='max_length', max_length=128
+        ).input_ids
+        return {'pixel_values': pixel_values, 'labels': torch.tensor(labels)}
+```
+
+Tested by loading a sample, confirming `pixel_values`/`labels` tensor shapes, then splitting into an 80/20 train/test set.
+
+**Known issue & workaround:** loading `TrOCRProcessor.from_pretrained('microsoft/trocr-base-printed')` directly hit a tokenizer-backend bug in the installed `transformers` version (`ValueError: Couldn't instantiate the backend tokenizer...`). Worked around it by loading the image processor and tokenizer separately (`ViTImageProcessor` + `RobertaTokenizer`) and composing them into a `TrOCRProcessor` manually — confirmed working, no errors.
+
+### What's Left
+- Finish labeling the remaining ~209 rows in `labels.csv` before full model training in Week 4.
+
+---
+
+## Repository Structure
+```
+├── SI26_Week1_Muhammad_Ahmad.ipynb    # setup, research, data collection
+├── SI26_Week2_MuhammadAhmad.ipynb     # preprocessing, Tesseract gap analysis
+├── SI26_Week3_Muhammad_Ahmad.ipynb    # dataset expansion, Dataset class
+├── data/
+│   ├── raw/
+│   │   ├── newspaper/
+│   │   ├── books/
+│   │   ├── signboards/
+│   │   ├── synthetic/
+│   │   └── other/
+│   ├── processed/
+│   └── labels.csv                     # 262 rows, 53 labeled
+└── README.md
+```
+
