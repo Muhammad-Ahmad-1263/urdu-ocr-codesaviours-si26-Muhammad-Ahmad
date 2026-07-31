@@ -210,7 +210,53 @@ This is a substantial improvement over earlier attempts during development (whic
 2. `Runtime > Change runtime type > GPU`
 3. Run all cells top to bottom, in order — Section 2 will prompt for the dataset zip upload, Section 11 will prompt a download at the end
 4. Training takes roughly 40–70 minutes depending on labeled data volume
+# Urdu OCR — A fine-tuned TrOCR model for extracting text from Urdu images
 
+## What problem this solves and why it matters
+Urdu is written in the Perso-Arabic script, with connected, position-dependent letterforms — this makes it far harder for standard OCR engines (built mainly for Latin-script text) to read reliably than English or other Latin-based languages. Many Urdu documents, signage, books, and handwritten notes remain effectively unsearchable and untranslatable because no accurate text extraction exists for them.
+
+A working Urdu OCR model could power real-world use cases such as digitizing Urdu newspaper archives and government records, making scanned Urdu textbooks searchable for students, or enabling translation apps to read Urdu signage and documents directly from a photo.
+
+## How it works
+This project fine-tunes **TrOCR** (Transformer-based OCR), a model architecture from Microsoft that pairs a vision transformer (which "reads" the image and turns it into visual features) with a text transformer (which turns those visual features into actual characters/words). Out of the box, TrOCR is trained mostly on English text, so it doesn't understand Urdu script.
+
+**Fine-tuning** means taking that pretrained model and continuing its training on a new, smaller, task-specific dataset — in this case, images of Urdu text paired with their correct transcriptions — so the model adapts its existing "read an image and output text" ability to Urdu's script and letterforms specifically, without starting from scratch.
+
+Our dataset (see below) provided those image–text pairs, which were used to further train the pretrained `microsoft/trocr-base-printed` checkpoint until it could attempt to transcribe Urdu images.
+
+## Live demo
+Try the model here: **[Urdu OCR — Live Demo](https://urdu-ocr-si26-muhammad.streamlit.app)**
+> Update this link once your Streamlit Community Cloud deployment finishes and gives you the actual URL.
+
+## How to run it locally
+```bash
+# 1. Clone the repo
+git clone https://github.com/Muhammad-Ahmad-1263/urdu-ocr-codesaviours-si26-Muhammad-Ahmad.git
+cd urdu-ocr-codesaviours-si26-Muhammad-Ahmad
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run the app
+streamlit run app.py
+```
+The app will start a local Streamlit server (by default at `http://localhost:8501`) where you can upload an Urdu image and see the extracted text.
+
+## Dataset details
+- **Total images collected and preprocessed:** 262
+- **Labeled images used for fine-tuning:** 53
+- **Sources:** collected and preprocessed as part of Week 3 of the internship (add specifics here — e.g. scanned documents, synthetic renders, photographed signage, whichever applies to your actual collection process)
+- **Variety:** *(fill in — fonts used, background types, printed vs. handwritten, image quality/sizes, etc.)*
+
+## Results
+- **Accuracy:** below 20%
+
+This is a low score, and a few likely causes stand out:
+- **Small labeled dataset** — only 53 labeled images out of 262 collected is a very small set for fine-tuning a transformer model, which typically needs thousands of examples to generalize well. The model likely overfit to a narrow slice of examples and struggled to generalize beyond them.
+- **Limited training time/epochs** — fine-tuning transformers usually benefits from more epochs and careful learning-rate tuning than was available in this timeframe.
+- **Urdu's script difficulty** — connected, position-dependent letterforms make Urdu OCR inherently harder than Latin-script OCR.
+
+With more time, priorities would be: labeling a much larger portion of the 262 collected images (or collecting more), training for more epochs with a properly tuned learning rate, and tracking character error rate (CER) throughout training rather than only at the end, to catch and correct problems earlier.
 ## Tools & Libraries
 
 - [PyTorch](https://pytorch.org)
@@ -218,3 +264,7 @@ This is a substantial improvement over earlier attempts during development (whic
 - [TrOCR (Microsoft)](https://huggingface.co/microsoft/trocr-base-printed)
 - Pillow, pandas, matplotlib
 - [Google Colab](https://colab.research.google.com)
+
+## Credit
+**Muhammad Ahmad**
+Built during the Code Saviours ML/AI Internship — Batch SI-26.
